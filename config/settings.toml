@@ -14,6 +14,7 @@
 
     [development.bot]
         PARSE_MODE = 'HTML'
+        ADMINS = [383415434]
 
     [development.postgres]
         NAME = 'DBMES'

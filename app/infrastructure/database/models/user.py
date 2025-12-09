@@ -8,8 +8,13 @@ from app.bot.enums.roles import UserRole
 class UserModel(BaseModel):
     id: int = Field(..., description="Internal auto-incrementing primary key")
     user_id: int = Field(..., description="Telegram user ID, unique per user")
+    username: str | None = Field(None, description="Telegram username")
+    full_name: str = Field(..., description="Telegram full name")
     created_at: datetime = Field(
         ..., description="Timestamp of account creation (timezone-aware)"
+    )
+    updated_at: datetime = Field(
+        ..., description="Timestamp of last update (timezone-aware)"
     )
     tz_region: str | None = Field(
         None, description="Timezone region name (e.g., 'Europe/Moscow')"
@@ -40,7 +45,10 @@ class UserModel(BaseModel):
             "example": {
                 "id": 1,
                 "user_id": 123456789,
+                "username": "johndoe",
+                "full_name": "John Doe",
                 "created_at": "2025-06-01T12:00:00+03:00",
+                "updated_at": "2025-06-01T12:00:00+03:00",
                 "tz_region": "Europe/Moscow",
                 "tz_offset": "+03:00",
                 "longitude": 37.6173,

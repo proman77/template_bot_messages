@@ -21,6 +21,8 @@ class UsersTable(BaseTable):
         self,
         *,
         user_id: int,
+        username: str | None,
+        full_name: str,
         language: str,
         role: UserRole,
         is_alive: bool = True,
@@ -28,14 +30,16 @@ class UsersTable(BaseTable):
     ) -> None:
         await self.connection.execute(
             sql="""
-                INSERT INTO users(user_id, language, role, is_alive, banned)
-                VALUES(%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;
+                INSERT INTO users(user_id, username, full_name, language, role, is_alive, banned)
+                VALUES(%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;
             """,
-            params=(user_id, language, role, is_alive, banned),
+            params=(user_id, username, full_name, language, role, is_alive, banned),
         )
         self._log(
             UsersTableAction.ADD,
             user_id=user_id,
+            username=username,
+            full_name=full_name,
             created_at=datetime.now(timezone.utc),
             language=language,
             role=role,
@@ -57,7 +61,10 @@ class UsersTable(BaseTable):
             sql="""
                 SELECT id,
                     user_id,
+                    username,
+                    full_name,
                     created_at,
+                    updated_at,
                     tz_region,
                     tz_offset,
                     longitude,

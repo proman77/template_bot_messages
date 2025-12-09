@@ -23,6 +23,7 @@ class BotConfig(BaseModel):
     parse_mode: ParseMode = Field(
         ..., description="Default parse mode for sending messages (e.g. HTML, Markdown)."
     )
+    admins: list[int] = Field(default=[], description="List of admin user IDs.")
 
 
 class PostgresConfig(BaseModel):
@@ -94,6 +95,7 @@ def get_config() -> AppConfig:
     bot = BotConfig(
         token=_settings.bot_token,
         parse_mode=_settings.bot.parse_mode,
+        admins=_settings.bot.admins or [],
     )
 
     postgres = PostgresConfig(
