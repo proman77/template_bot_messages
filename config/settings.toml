@@ -16,7 +16,7 @@
         PARSE_MODE = 'HTML'
 
     [development.postgres]
-        NAME = '11TT'
+        NAME = 'DBMES'
         HOST = '91.98.71.11'
         PORT = 5432
         USER = 'postgres'
