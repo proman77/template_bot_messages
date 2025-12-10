@@ -40,14 +40,7 @@ async def process_start_command(
     user_row: UserModel | None,
 ) -> None:
     if user_row is None:
-        role = UserRole.ADMIN if message.from_user.id in get_config().bot.admins else UserRole.USER
-        await db.users.add(
-            user_id=message.from_user.id,
-            username=message.from_user.username,
-            full_name=message.from_user.full_name,
-            language=message.from_user.language_code,
-            role=role,
-        )
+        pass # User is created in middleware
     await bot.set_my_commands(
         commands=get_main_menu_commands(i18n=i18n),
         scope=BotCommandScopeChat(

@@ -47,6 +47,32 @@ class UsersTable(BaseTable):
             banned=banned,
         )
 
+    async def upsert_user(
+        self,
+        *,
+        user_id: int,
+        username: str | None,
+        full_name: str,
+        language: str,
+        role: UserRole,
+    ) -> UserModel:
+        data = await self.connection.update_and_fetchone(
+            sql="""
+                INSERT INTO users(user_id, username, full_name, language, role, is_alive, banned, updated_at)
+                VALUES(%s, %s, %s, %s, %s, TRUE, FALSE, NOW())
+                ON CONFLICT (user_id) DO UPDATE SET
+                    username = EXCLUDED.username,
+                    full_name = EXCLUDED.full_name,
+                    is_alive = TRUE,
+                    updated_at = NOW()
+                RETURNING *;
+            """,
+            params=(user_id, username, full_name, language, role),
+        )
+
+        self._log(UsersTableAction.UPSERT, user_id=user_id)
+        return data.to_model(model=UserModel)
+
     async def delete(self, *, user_id: int) -> None:
         await self.connection.execute(
             sql="""
