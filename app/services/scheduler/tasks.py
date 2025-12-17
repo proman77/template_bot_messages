@@ -1,5 +1,6 @@
 import time
 
+from taskiq import TaskiqDepends, Context
 from app.services.scheduler.taskiq_broker import broker
 
 
@@ -35,3 +36,17 @@ async def scheduled_task():
         f"{time.strftime('%H:%M:%S', time.localtime(time.time()))}: Это запланированная разовая задача"
     )
     print()
+
+
+@broker.task
+async def test_di_task(context: Context = TaskiqDepends()) -> str:
+    """
+    Test task to verify Dependency Injection.
+    It tries to access the Bot instance from the state and get its info.
+    """
+    try:
+        bot = context.state.bot
+        me = await bot.get_me()
+        return f"SUCCESS: Accessed Bot. ID: {me.id}, Username: {me.username}"
+    except Exception as e:
+        return f"FAILURE: {str(e)}"
