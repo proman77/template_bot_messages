@@ -1,27 +1,43 @@
 import sys
+import os
+import asyncio
 import logging
-from app.services.scheduler.taskiq_broker import broker
 
-# This file serves as an entry point for the worker process.
-# It imports the configured broker.
-#
-# Usage:
-# taskiq worker app.worker:broker
+# Ensure we import from local directory, not site-packages
+sys.path.insert(0, os.getcwd())
+
+# Re-export broker so 'app.worker:broker' still works if needed
+from app.services.scheduler.taskiq_broker import broker
+print(f"DEBUG: Broker ID in worker.py: {id(broker)}")
 
 if __name__ == "__main__":
-    # Allow running the worker directly via python
+    # Fix for Windows ProactorEventLoop issue with psycopg
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     try:
         from taskiq.cli.worker.run import run_worker
         from taskiq.cli.worker.args import WorkerArgs
+
+        # Force import and debug path
+        import app.services.scheduler.tasks
+        logging.warning(f"DEBUG: Tasks module file: {app.services.scheduler.tasks.__file__}")
         
-        # We need to construct args. This is a bit internal, but helpful for debugging.
-        # Alternatively, just print instructions.
-        print("Starting worker process...")
-        print("For production, use: taskiq worker app.worker:broker")
+        logging.warning("🚀 Starting Worker with Windows compatibility fix and workers=1...")
+        logging.warning(f"DEBUG: Registered tasks: {list(broker.get_all_tasks().keys())}")
         
-        # Attempt to run programmatically (experimental)
-        # run_worker(WorkerArgs(broker="app.worker:broker", modules=[]))
-        # The above API might vary by version. 
+        # Run the worker programmatically with correct arguments
+        # Pass the broker import string to avoid pickling issues on Windows
+        args = WorkerArgs(
+            broker="app.worker:broker", 
+            modules=["app.services.scheduler.tasks"],
+            workers=1,
+        )
+        run_worker(args)
         
-    except ImportError:
-        pass
+    except ImportError as e:
+        print(f"❌ Error: Could not import taskiq or modules. Error: {e}")
+        import traceback
+        traceback.print_exc()
+    except Exception as e:
+        print(f"❌ Error starting worker: {e}")

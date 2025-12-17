@@ -1,4 +1,6 @@
 import logging
+import sys
+import asyncio
 from typing import Any
 
 import ormsgpack
@@ -13,6 +15,10 @@ from taskiq_redis import RedisScheduleSource, RedisAsyncResultBackend
 
 from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
 from config.config import get_config
+
+# Fix for Windows ProactorEventLoop issue with psycopg
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 config = get_config()
 
@@ -31,11 +37,9 @@ if config.redis.username and config.redis.password:
 
 broker = PullBasedJetStreamBroker(
     servers=config.nats.servers,
-    queue="taskiq_tasks",
+    queue="taskiq_tasks_json",
 ).with_result_backend(
     RedisAsyncResultBackend(redis_url=redis_url)
-).with_serializer(
-    ORMsgPackSerializer()
 )
 
 redis_source = RedisScheduleSource(url=redis_url)
@@ -47,7 +51,7 @@ scheduler = TaskiqScheduler(broker, [redis_source, LabelScheduleSource(broker)])
 async def startup(state: TaskiqState) -> None:
     logging.basicConfig(level=config.logs.level_name, format=config.logs.format)
     logger = logging.getLogger(__name__)
-    logger.info("Starting worker...")
+    logger.info("🚀 WORKER STARTUP EVENT TRIGGERED! Initializing dependencies...")
 
     state.logger = logger
 

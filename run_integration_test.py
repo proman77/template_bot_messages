@@ -1,15 +1,22 @@
 import asyncio
 import logging
 import sys
+import os
+
+sys.path.insert(0, os.getcwd())
 
 from app.services.scheduler.taskiq_broker import broker
-from app.services.scheduler.tasks import test_di_task
+from app.services.scheduler.tasks import test_di_task_v2
 from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
 from config.config import get_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Fix for Windows ProactorEventLoop issue with psycopg
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 async def check_connections():
     config = get_config()
@@ -54,14 +61,14 @@ async def run_integration_test():
     await broker.startup()
     
     try:
-        logger.info("Sending task 'test_di_task'...")
+        logger.info("Sending task 'test_di_task_v2'...")
         # Send the task
-        task = await test_di_task.kiq()
+        task = await test_di_task_v2.kiq()
         logger.info(f"Task sent. ID: {task.task_id}")
         
         logger.info("Waiting for result...")
-        # Wait for result (timeout 10s)
-        result = await task.wait_result(timeout=10)
+        # Wait for result (timeout 30s)
+        result = await task.wait_result(timeout=30)
         
         logger.info(f"Result received: {result.return_value}")
         
