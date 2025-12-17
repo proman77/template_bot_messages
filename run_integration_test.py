@@ -6,7 +6,7 @@ import os
 sys.path.insert(0, os.getcwd())
 
 from app.services.scheduler.taskiq_broker import broker
-from app.services.scheduler.tasks import test_di_task_v2
+from app.services.scheduler.tasks import test_di_task
 from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
 from config.config import get_config
 
@@ -61,9 +61,9 @@ async def run_integration_test():
     await broker.startup()
     
     try:
-        logger.info("Sending task 'test_di_task_v2'...")
+        logger.info("Sending task 'test_di_task'...")
         # Send the task
-        task = await test_di_task_v2.kiq()
+        task = await test_di_task.kiq()
         logger.info(f"Task sent. ID: {task.task_id}")
         
         logger.info("Waiting for result...")

@@ -18,13 +18,11 @@ if __name__ == "__main__":
     try:
         from taskiq.cli.worker.run import run_worker
         from taskiq.cli.worker.args import WorkerArgs
-
-        # Force import and debug path
-        import app.services.scheduler.tasks
-        logging.warning(f"DEBUG: Tasks module file: {app.services.scheduler.tasks.__file__}")
         
-        logging.warning("🚀 Starting Worker with Windows compatibility fix and workers=1...")
-        logging.warning(f"DEBUG: Registered tasks: {list(broker.get_all_tasks().keys())}")
+        # Force import of tasks to ensure they are registered with the broker
+        import app.services.scheduler.tasks
+        
+        print("🚀 Starting Worker with Windows compatibility fix and workers=1...")
         
         # Run the worker programmatically with correct arguments
         # Pass the broker import string to avoid pickling issues on Windows
