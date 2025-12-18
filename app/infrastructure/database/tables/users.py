@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from app.bot.enums.roles import UserRole
+from app.infrastructure.database.models.user_role import UserRole
 from app.infrastructure.database.connection.base import BaseConnection
 from app.infrastructure.database.models.user import UserModel
 from app.infrastructure.database.query.results import SingleQueryResult
@@ -148,3 +148,13 @@ class UsersTable(BaseTable):
             params=(banned, user_id),
         )
         self._log(UsersTableAction.UPDATE_BANNED_STATUS, user_id=user_id, banned=banned)
+
+    async def get_active_users(self, language: str | None = None) -> list[int]:
+        sql = "SELECT user_id FROM users WHERE is_alive = TRUE AND banned = FALSE"
+        params = []
+        if language and language != "all":
+            sql += " AND language = %s"
+            params.append(language)
+
+        data = await self.connection.fetchmany(sql, tuple(params))
+        return [row["user_id"] for row in data.rows]

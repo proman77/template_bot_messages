@@ -10,9 +10,10 @@ from fluentogram import TranslatorRunner
 from taskiq import ScheduledTask
 from taskiq_redis import RedisScheduleSource
 
-from app.bot.enums.roles import UserRole
+from app.infrastructure.database.models.user_role import UserRole
 from app.bot.filters.dialog_filters import DialogStateFilter, DialogStateGroupFilter
 from app.bot.keyboards.links_kb import get_links_kb
+from app.bot.dialogs.flows.broadcast.states import BroadcastSG
 from app.bot.dialogs.flows.settings.states import SettingsSG
 from app.bot.dialogs.flows.start.states import StartSG
 from app.bot.keyboards.menu_button import get_main_menu_commands
@@ -144,6 +145,17 @@ async def process_lang_command(
     message: Message, dialog_manager: DialogManager, i18n: TranslatorRunner
 ) -> None:
     await dialog_manager.switch_to(state=SettingsSG.lang)
+
+
+@commands_router.message(Command("broadcast"))
+async def process_broadcast_command(
+    message: Message,
+    dialog_manager: DialogManager,
+    user_row: UserModel,
+) -> None:
+    if user_row.role not in [UserRole.ADMIN, UserRole.OWNER]:
+        return
+    await dialog_manager.start(state=BroadcastSG.SELECT_LANG, mode=StartMode.RESET_STACK)
 
 
 @commands_router.message(Command("help"))

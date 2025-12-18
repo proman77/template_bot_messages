@@ -1,0 +1,106 @@
+[2025-12-18 16:02:36,481][taskiq.worker][INFO   ][MainProcess] Pid of a main process: 8792
+[2025-12-18 16:02:36,482][taskiq.worker][INFO   ][MainProcess] Starting 1 worker processes.
+[2025-12-18 16:02:36,489][taskiq.process-manager][INFO   ][MainProcess] Started process worker-0 with pid 15588 
+[2025-12-18 16:02:42,848][taskiq.worker][INFO   ][worker-0] Importing tasks from module app.services.scheduler.tasks
+[2025-12-18 16:02:42,876][app.services.scheduler.taskiq_broker][INFO   ][worker-0] \U0001f680 WORKER STARTUP EVENT TRIGGERED! Initializing dependencies...
+[2025-12-18 16:02:43,713][app.infrastructure.database.connection.connect_to_pg][INFO   ][worker-0] Connected to PostgreSQL version: PostgreSQL 17.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+[2025-12-18 16:02:43,796][app.services.scheduler.taskiq_broker][INFO   ][worker-0] \u2705 Database pool initialized successfully
+[2025-12-18 16:02:44,426][taskiq.receiver.receiver][INFO   ][worker-0] Listening started.
+[2025-12-18 16:02:44,490][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.broadcast_tasks:start_broadcast_task with ID: 6c49547422304f368f2612d5dd8b90f1
+[2025-12-18 16:02:44,548][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.broadcast_tasks:start_broadcast_task with ID: e36e19f94f1e43d589f2383c61785849
+[2025-12-18 16:02:44,605][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.tasks:simple_task with ID: 527508182a9e4afca5049e0b73545866
+[2025-12-18 16:02:44,664][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.tasks:test_di_task with ID: c4bfb52cde9e45f1ba96def1f9376707
+[2025-12-18 16:02:45,189][app.services.scheduler.tasks][INFO   ][worker-0] SUCCESS: Accessed Bot. ID: 8442739394, Username: ih_echo_bot
+[2025-12-18 16:02:45,190][app.infrastructure.database.connection.connect_to_pg][INFO   ][worker-0] Connected to PostgreSQL version: PostgreSQL 17.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+[2025-12-18 16:02:45,258][app.infrastructure.database.connection.connect_to_pg][INFO   ][worker-0] Connected to PostgreSQL version: PostgreSQL 17.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+[2025-12-18 16:02:45,368][app.infrastructure.database.tables.base][INFO   ][worker-0] Table='broadcast_campaigns', Action='UPDATE_STATUS', Details: campaign_id=1, status=BroadcastStatus.SENDING
+[2025-12-18 16:02:45,427][app.infrastructure.database.tables.base][INFO   ][worker-0] Table='broadcast_campaigns', Action='UPDATE_STATUS', Details: campaign_id=2, status=BroadcastStatus.SENDING
+[2025-12-18 16:02:45,482][taskiq.receiver.receiver][ERROR  ][worker-0] Exception found while executing function: 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'
+[2025-12-18 16:02:45,539][taskiq.dependencies.ctx][WARNING][worker-0] Exception found on dependency teardown 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq_dependencies\ctx.py", line 301, in close
+    await dep.athrow(*args)
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\dependencies.py", line 42, in get_db
+    yield DB(connection)
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'
+[2025-12-18 16:02:45,543][taskiq.receiver.receiver][ERROR  ][worker-0] Exception found while executing function: 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'
+[2025-12-18 16:02:45,601][taskiq.dependencies.ctx][WARNING][worker-0] Exception found on dependency teardown 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq_dependencies\ctx.py", line 301, in close
+    await dep.athrow(*args)
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\dependencies.py", line 42, in get_db
+    yield DB(connection)
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'
+[2025-12-18 16:03:15,519][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.tasks:simple_task with ID: d5acdcaf245442f3b27fbbb79bcd9dd4
+[2025-12-18 16:03:15,575][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.tasks:test_di_task with ID: d391eb7bb4a04886a33dcbbee59efa2c
+[2025-12-18 16:03:15,714][app.services.scheduler.tasks][INFO   ][worker-0] SUCCESS: Accessed Bot. ID: 8442739394, Username: ih_echo_bot
+[2025-12-18 16:08:08,310][taskiq.receiver.receiver][INFO   ][worker-0] Executing task app.services.scheduler.broadcast_tasks:start_broadcast_task with ID: 8b2873ec782447f9abbeb9bd0f8aadda
+[2025-12-18 16:08:08,421][app.infrastructure.database.tables.base][INFO   ][worker-0] Table='broadcast_campaigns', Action='UPDATE_STATUS', Details: campaign_id=3, status=BroadcastStatus.SENDING
+[2025-12-18 16:08:08,529][taskiq.receiver.receiver][ERROR  ][worker-0] Exception found while executing function: 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'
+[2025-12-18 16:08:08,583][taskiq.dependencies.ctx][WARNING][worker-0] Exception found on dependency teardown 'MultipleQueryResult' object has no attribute 'rows'
+Traceback (most recent call last):
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq_dependencies\ctx.py", line 301, in close
+    await dep.athrow(*args)
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\dependencies.py", line 42, in get_db
+    yield DB(connection)
+  File "C:\Users\proman_esp\AppData\Local\Programs\Python\Python313\Lib\site-packages\taskiq\receiver\receiver.py", line 255, in run_task
+    returned = await target_future
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\services\scheduler\broadcast_tasks.py", line 103, in start_broadcast_task
+    messages = await db.broadcast.get_campaign_messages(campaign_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\proman_esp\Programing\template_bot_messages\app\infrastructure\database\tables\broadcast.py", line 75, in get_campaign_messages
+    return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+                                                                 ^^^^^^^^^
+AttributeError: 'MultipleQueryResult' object has no attribute 'rows'

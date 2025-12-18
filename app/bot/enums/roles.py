@@ -1,7 +1,3 @@
-from enum import Enum
+from app.infrastructure.database.models.user_role import UserRole
 
-
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    OWNER = "owner"
-    USER = "user"
+__all__ = ["UserRole"]

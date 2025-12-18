@@ -1,5 +1,10 @@
 import logging
+import asyncio
+import sys
 from urllib.parse import quote
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool

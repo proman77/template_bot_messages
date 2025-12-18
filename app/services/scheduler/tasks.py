@@ -5,6 +5,7 @@ from aiogram import Bot
 from taskiq import TaskiqDepends
 from app.services.scheduler.taskiq_broker import broker
 from app.services.scheduler.dependencies import get_bot
+from app.services.scheduler.broadcast_tasks import * # Register broadcast tasks
 
 logger = logging.getLogger(__name__)
 

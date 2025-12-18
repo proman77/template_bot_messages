@@ -1,6 +1,25 @@
-import logging
-import sys
 import asyncio
+import sys
+
+# Fix for Windows ProactorEventLoop issue with psycopg
+if sys.platform == "win32":
+    from asyncio import windows_events
+    import selectors
+    
+    # Force the policy
+    asyncio.set_event_loop_policy(windows_events.WindowsSelectorEventLoopPolicy())
+    
+    # Monkeypatch new_event_loop
+    def _new_event_loop_fixed():
+        return asyncio.SelectorEventLoop()
+    asyncio.new_event_loop = _new_event_loop_fixed
+    
+    # Also monkeypatch the policy's new_event_loop just in case
+    windows_events.WindowsSelectorEventLoopPolicy.new_event_loop = staticmethod(lambda: asyncio.SelectorEventLoop())
+    windows_events.WindowsProactorEventLoopPolicy.new_event_loop = staticmethod(lambda: asyncio.SelectorEventLoop())
+    windows_events.DefaultEventLoopPolicy = windows_events.WindowsSelectorEventLoopPolicy
+
+import logging
 from typing import Any
 
 import ormsgpack
@@ -15,10 +34,6 @@ from taskiq_redis import RedisScheduleSource, RedisAsyncResultBackend
 
 from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
 from config.config import get_config
-
-# Fix for Windows ProactorEventLoop issue with psycopg
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 config = get_config()
 
@@ -49,12 +64,15 @@ scheduler = TaskiqScheduler(broker, [redis_source, LabelScheduleSource(broker)])
 
 @broker.on_event(TaskiqEvents.WORKER_STARTUP)
 async def startup(state: TaskiqState) -> None:
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     logging.basicConfig(level=config.logs.level_name, format=config.logs.format)
     logger = logging.getLogger(__name__)
     logger.info("🚀 WORKER STARTUP EVENT TRIGGERED! Initializing dependencies...")
 
     state.logger = logger
-
+    
     # Initialize Bot
     bot = Bot(
         token=config.bot.token,
@@ -63,14 +81,19 @@ async def startup(state: TaskiqState) -> None:
     state.bot = bot
     
     # Initialize DB Pool
-    db_pool = await get_pg_pool(
-        db_name=config.postgres.name,
-        host=config.postgres.host,
-        port=config.postgres.port,
-        user=config.postgres.user,
-        password=config.postgres.password,
-    )
-    state.db_pool = db_pool
+    try:
+        db_pool = await get_pg_pool(
+            db_name=config.postgres.name,
+            host=config.postgres.host,
+            port=config.postgres.port,
+            user=config.postgres.user,
+            password=config.postgres.password,
+        )
+        state.db_pool = db_pool
+        logger.info("✅ Database pool initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize database pool: {e}")
+        raise e
     
     # Register dependencies
     # Note: We can access these in tasks via context or dependency injection if we set up a provider

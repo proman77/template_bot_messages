@@ -32,3 +32,11 @@ async def get_db_pool():
             password=config.postgres.password,
         )
     return _db_pool_instance
+
+async def get_db(db_pool = TaskiqDepends(get_db_pool)):
+    from app.infrastructure.database.db import DB
+    from app.infrastructure.database.connection.psycopg_connection import PsycopgConnection
+    
+    async with db_pool.connection() as raw_connection:
+        connection = PsycopgConnection(raw_connection)
+        yield DB(connection)
