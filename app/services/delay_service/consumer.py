@@ -31,13 +31,30 @@ class DelayedMessageConsumer:
         self.durable_name = durable_name
 
     async def start(self) -> None:
-        self.stream_sub = await self.js.subscribe(
-            subject=self.subject,
-            stream=self.stream,
-            cb=self.on_message,
-            durable=self.durable_name,
-            manual_ack=True,
-        )
+        import asyncio
+        from nats.js.errors import Error as NatsError
+        
+        for attempt in range(5):
+            try:
+                self.stream_sub = await self.js.subscribe(
+                    subject=self.subject,
+                    stream=self.stream,
+                    cb=self.on_message,
+                    durable=self.durable_name,
+                    manual_ack=True,
+                    queue=self.durable_name,
+                )
+                logger.info("Successfully subscribed to delayed message stream")
+                return
+            except NatsError as e:
+                if "consumer is already bound" in str(e):
+                    logger.warning(f"Consumer bound, retrying in 2s (attempt {attempt + 1}/5)...")
+                    await asyncio.sleep(2)
+                else:
+                    raise e
+        
+        # If we failed after retries, try one last time or raise
+        raise Exception("Failed to subscribe to NATS consumer after multiple attempts")
 
     async def on_message(self, msg: Msg):
         if msg.headers.get("Tg-Delayed-Type") == Action.DELETE:

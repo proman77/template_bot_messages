@@ -10,7 +10,10 @@ from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
 _bot_instance = None
 _db_pool_instance = None
 
-def get_bot() -> Bot:
+def get_bot(context: Context = TaskiqDepends()) -> Bot:
+    if hasattr(context.state, "bot"):
+        return context.state.bot
+    
     global _bot_instance
     if _bot_instance is None:
         config = get_config()
@@ -20,7 +23,10 @@ def get_bot() -> Bot:
         )
     return _bot_instance
 
-async def get_db_pool():
+async def get_db_pool(context: Context = TaskiqDepends()):
+    if hasattr(context.state, "db_pool"):
+        return context.state.db_pool
+        
     global _db_pool_instance
     if _db_pool_instance is None:
         config = get_config()
@@ -33,10 +39,15 @@ async def get_db_pool():
         )
     return _db_pool_instance
 
-async def get_db(db_pool = TaskiqDepends(get_db_pool)):
-    from app.infrastructure.database.db import DB
-    from app.infrastructure.database.connection.psycopg_connection import PsycopgConnection
+async def get_db_connection(context: Context = TaskiqDepends()):
+    """
+    Get a database connection for Taskiq tasks.
+    Returns a connection context manager.
+    """
+    # Get pool from context state
+    if hasattr(context.state, "db_pool"):
+        db_pool = context.state.db_pool
+    else:
+        db_pool = await get_db_pool(context)
     
-    async with db_pool.connection() as raw_connection:
-        connection = PsycopgConnection(raw_connection)
-        yield DB(connection)
+    return db_pool.connection()

@@ -157,4 +157,4 @@ class UsersTable(BaseTable):
             params.append(language)
 
         data = await self.connection.fetchmany(sql, tuple(params))
-        return [row["user_id"] for row in data.rows]
+        return [row["user_id"] for row in data.data]

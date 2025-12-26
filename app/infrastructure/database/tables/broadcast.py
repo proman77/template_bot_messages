@@ -72,7 +72,7 @@ class BroadcastTable(BaseTable):
             sql="SELECT * FROM broadcast_messages WHERE campaign_id = %s;",
             params=(campaign_id,),
         )
-        return [row.to_model(model=BroadcastMessageModel) for row in data.rows]
+        return data.to_models(model=BroadcastMessageModel) or []
 
     async def get_campaign(self, campaign_id: int) -> BroadcastCampaignModel | None:
         data = await self.connection.fetchone(

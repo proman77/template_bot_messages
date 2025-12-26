@@ -65,9 +65,15 @@ async def on_finish(callback: CallbackQuery, button: Button, manager: DialogMana
     from app.infrastructure.database.models.broadcast_status import BroadcastStatus
     await db.broadcast.update_status(campaign.id, BroadcastStatus.PENDING)
     
-    # 4. Trigger Taskiq Loader
+    # 4. Trigger Taskiq Loader (delayed to ensure DB commit)
+    import asyncio
     from app.services.scheduler.broadcast_tasks import start_broadcast_task
-    await start_broadcast_task.kiq(campaign_id=campaign.id)
+    
+    async def _kick_broadcast(c_id: int):
+        await asyncio.sleep(1)  # Wait for DB transaction to commit
+        await start_broadcast_task.kiq(campaign_id=c_id)
+        
+    asyncio.create_task(_kick_broadcast(campaign.id))
     
     await callback.answer("Рассылка запущена!")
     await manager.done()
