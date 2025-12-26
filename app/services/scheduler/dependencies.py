@@ -51,3 +51,22 @@ async def get_db_connection(context: Context = TaskiqDepends()):
         db_pool = await get_db_pool(context)
     
     return db_pool.connection()
+
+_redis_instance = None
+
+async def get_redis(context: Context = TaskiqDepends()):
+    if hasattr(context.state, "redis"):
+        return context.state.redis
+        
+    global _redis_instance
+    if _redis_instance is None:
+        from app.infrastructure.cache.connect_to_redis import get_redis_pool
+        config = get_config()
+        _redis_instance = await get_redis_pool(
+            db=config.redis.database,
+            host=config.redis.host,
+            port=config.redis.port,
+            username=config.redis.username,
+            password=config.redis.password,
+        )
+    return _redis_instance

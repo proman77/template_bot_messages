@@ -4,11 +4,14 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Cancel, Column, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 
-from app.bot.dialogs.flows.broadcast.getters import get_broadcast_data
+from app.bot.dialogs.flows.broadcast.getters import get_broadcast_data, get_monitoring_data
 from app.bot.dialogs.flows.broadcast.handlers import (
     on_finish,
     on_language_selected,
     on_message_input,
+    on_pause,
+    on_resume,
+    on_stop,
 )
 from app.bot.dialogs.flows.broadcast.states import BroadcastSG
 
@@ -45,5 +48,23 @@ broadcast_dialog = Dialog(
         ),
         state=BroadcastSG.PREVIEW,
         getter=get_broadcast_data,
+    ),
+    # 4. Monitoring
+    Window(
+        Const("📊 <b>Статус рассылки</b>\n"),
+        Format("Статус: {status}"),
+        Format("Прогресс: {bar} {progress}%"),
+        Format("📤 Отправлено: {sent}"),
+        Format("❌ Ошибок: {fail}"),
+        Format("👥 Всего: {total}"),
+        Column(
+            Button(Const("⏸ Пауза"), id="pause", on_click=on_pause, when="is_sending"),
+            Button(Const("▶️ Продолжить"), id="resume", on_click=on_resume, when="is_paused"),
+            Button(Const("⏹ Остановить"), id="stop", on_click=on_stop, when=~F["is_completed"]),
+            Button(Const("🔄 Обновить"), id="refresh"), # Default behavior is just to refresh the window
+            Cancel(Const("✅ Завершить"), when="is_completed"),
+        ),
+        state=BroadcastSG.MONITORING,
+        getter=get_monitoring_data,
     ),
 )

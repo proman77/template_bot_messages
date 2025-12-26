@@ -6,7 +6,7 @@ from taskiq import TaskiqDepends
 
 from app.infrastructure.database.models.broadcast_status import BroadcastStatus
 from app.infrastructure.database.db import DB
-from app.services.scheduler.dependencies import get_bot, get_db_connection
+from app.services.scheduler.dependencies import get_bot, get_db_connection, get_redis
 from app.services.scheduler.taskiq_broker import broker
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,9 @@ async def send_one_message(
     campaign_id: int,
     bot: Bot = TaskiqDepends(get_bot),
     db_conn = TaskiqDepends(get_db_connection),
+    redis = TaskiqDepends(get_redis),
 ):
+    logger.info(f"[SENDER] Task started for user {user_id}, campaign {campaign_id}")
     from app.infrastructure.database.db import DB
     from app.infrastructure.database.connection.psycopg_connection import PsycopgConnection
     
@@ -26,7 +28,22 @@ async def send_one_message(
         connection = PsycopgConnection(raw_connection)
         db = DB(connection)
         
-        # 1. Check if campaign is still active
+        # 1. Check if campaign is still active (using Redis for speed)
+        while True:
+            status = await redis.get(f"broadcast:{campaign_id}:status")
+            if status:
+                status = status.decode()
+                if status == BroadcastStatus.PAUSED:
+                    logger.info(f"[SENDER] Campaign {campaign_id} is PAUSED, waiting...")
+                    # If paused, wait and check again
+                    await asyncio.sleep(5)
+                    continue
+                if status in [BroadcastStatus.CANCELLED, "stopped"]:
+                    logger.info(f"[SENDER] Campaign {campaign_id} is {status}, stopping task.")
+                    return
+            break
+        
+        # Fallback to DB if not in Redis or for extra safety
         campaign = await db.broadcast.get_campaign(campaign_id)
         if not campaign or campaign.status == BroadcastStatus.PAUSED:
             return
@@ -39,6 +56,7 @@ async def send_one_message(
         # 3. Get user to check language
         user = await db.users.get_user(user_id=user_id)
         if not user:
+            logger.warning(f"[SENDER] User {user_id} not found in DB. Skipping.")
             return
 
         # 4. Find appropriate message
@@ -47,6 +65,7 @@ async def send_one_message(
             msg = next((m for m in messages if m.language_code == "all"), None)
 
         if not msg:
+            logger.warning(f"[SENDER] No suitable message found for user {user_id} (lang: {user.language}). Skipping.")
             return
 
         # 5. Send message based on content type
@@ -86,9 +105,11 @@ async def send_one_message(
                     reply_markup=msg.reply_markup,
                 )
             logger.info(f"Successfully sent broadcast message to user {user_id}")
+            await redis.incr(f"broadcast:{campaign_id}:sent")
         except TelegramForbiddenError:
             logger.info(f"User {user_id} blocked the bot. Marking as inactive.")
             await db.users.update_alive_status(user_id=user_id, is_alive=False)
+            await redis.incr(f"broadcast:{campaign_id}:fail")
         except TelegramRetryAfter as e:
             logger.warning(f"Rate limit hit. Sleeping for {e.retry_after} seconds.")
             await asyncio.sleep(e.retry_after)
@@ -96,12 +117,14 @@ async def send_one_message(
             raise e
         except Exception as e:
             logger.error(f"Failed to send message to {user_id}: {e}")
+            await redis.incr(f"broadcast:{campaign_id}:fail")
 
 
 @broker.task
 async def start_broadcast_task(
     campaign_id: int,
     db_conn = TaskiqDepends(get_db_connection),
+    redis = TaskiqDepends(get_redis),
 ):
     from app.infrastructure.database.db import DB
     from app.infrastructure.database.connection.psycopg_connection import PsycopgConnection
@@ -115,6 +138,11 @@ async def start_broadcast_task(
         # 1. Update status to sending
         await db.broadcast.update_status(campaign_id, BroadcastStatus.SENDING)
         logger.info(f"[BROADCAST] Campaign {campaign_id} status updated to SENDING")
+        
+        # Initialize Redis counters and status
+        await redis.set(f"broadcast:{campaign_id}:status", BroadcastStatus.SENDING)
+        await redis.set(f"broadcast:{campaign_id}:sent", 0)
+        await redis.set(f"broadcast:{campaign_id}:fail", 0)
 
         # 2. Get campaign and messages
         campaign = await db.broadcast.get_campaign(campaign_id)
@@ -134,14 +162,18 @@ async def start_broadcast_task(
 
         # 4. Fetch target users
         user_ids = await db.users.get_active_users(language=target_lang)
-        logger.info(f"[BROADCAST] Starting broadcast for campaign {campaign_id} to {len(user_ids)} users: {user_ids}")
+        total_users = len(user_ids)
+        await redis.set(f"broadcast:{campaign_id}:total", total_users)
+        
+        logger.info(f"[BROADCAST] Starting broadcast for campaign {campaign_id} to {total_users} users: {user_ids}")
 
         # 5. Dispatch individual send tasks
         for user_id in user_ids:
             logger.info(f"[BROADCAST] Dispatching send_one_message for user {user_id}, campaign {campaign_id}")
-            await send_one_message.kiq(user_id, campaign_id)
+            task = await send_one_message.kiq(user_id, campaign_id)
+            logger.info(f"[BROADCAST] Task dispatched: {task.task_id}")
 
         # 6. Mark loader as finished
-        # Note: In a production system, we'd wait for all tasks to complete using a counter in Redis
         await db.broadcast.update_status(campaign_id, BroadcastStatus.COMPLETED)
+        await redis.set(f"broadcast:{campaign_id}:status", BroadcastStatus.COMPLETED)
         logger.info(f"Broadcast loader finished for campaign {campaign_id}")

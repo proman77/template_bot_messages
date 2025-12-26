@@ -33,6 +33,8 @@ from taskiq_nats import PullBasedJetStreamBroker
 from taskiq_redis import RedisScheduleSource, RedisAsyncResultBackend
 
 from app.infrastructure.database.connection.connect_to_pg import get_pg_pool
+from app.infrastructure.cache.connect_to_redis import get_redis_pool
+from app.services.scheduler.middlewares import BroadcastRateLimiterMiddleware
 from config.config import get_config
 
 config = get_config()
@@ -55,6 +57,8 @@ broker = PullBasedJetStreamBroker(
     queue="taskiq_tasks_json",
 ).with_result_backend(
     RedisAsyncResultBackend(redis_url=redis_url)
+).with_middlewares(
+    BroadcastRateLimiterMiddleware(limit_per_sec=25)
 )
 
 redis_source = RedisScheduleSource(url=redis_url)
@@ -95,6 +99,21 @@ async def startup(state: TaskiqState) -> None:
         logger.error(f"❌ Failed to initialize database pool: {e}")
         raise e
     
+    # Initialize Redis
+    try:
+        redis = await get_redis_pool(
+            db=config.redis.database,
+            host=config.redis.host,
+            port=config.redis.port,
+            username=config.redis.username,
+            password=config.redis.password,
+        )
+        state.redis = redis
+        logger.info("✅ Redis connection initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Redis: {e}")
+        raise e
+    
     # Register dependencies
     # Note: We can access these in tasks via context or dependency injection if we set up a provider
     # For now, we store them in state. 
@@ -110,5 +129,8 @@ async def shutdown(state: TaskiqState) -> None:
     
     if hasattr(state, "db_pool"):
         await state.db_pool.close()
+        
+    if hasattr(state, "redis"):
+        await state.redis.close()
         
     state.logger.info("Worker stopped")

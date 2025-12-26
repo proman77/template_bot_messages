@@ -34,4 +34,4 @@
         DELAYED_CONSUMER_DURABLE_NAME = 'delayed_messages_consumer'
     
     [development.cache]
-        USE_CACHE = false
+        USE_CACHE = true

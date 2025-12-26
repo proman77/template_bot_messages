@@ -7,3 +7,4 @@ class BroadcastSG(StatesGroup):
     INPUT_MESSAGE = State()
     PREVIEW = State()
     CONFIRM = State()
+    MONITORING = State()

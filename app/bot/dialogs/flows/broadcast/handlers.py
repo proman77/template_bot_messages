@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from aiogram.types import Message, CallbackQuery
@@ -6,6 +7,9 @@ from aiogram_dialog.widgets.kbd import Button
 
 from app.bot.dialogs.flows.broadcast.states import BroadcastSG
 from app.infrastructure.database.db import DB
+from app.infrastructure.database.models.broadcast_status import BroadcastStatus
+
+logger = logging.getLogger(__name__)
 
 
 async def on_language_selected(callback: CallbackQuery, button: Button, manager: DialogManager, lang_code: str):
@@ -65,15 +69,58 @@ async def on_finish(callback: CallbackQuery, button: Button, manager: DialogMana
     from app.infrastructure.database.models.broadcast_status import BroadcastStatus
     await db.broadcast.update_status(campaign.id, BroadcastStatus.PENDING)
     
-    # 4. Trigger Taskiq Loader (delayed to ensure DB commit)
+    # 4. Initialize Redis keys immediately to avoid "unknown" status in UI
+    redis = manager.middleware_data.get("_cache_pool")
+    if redis:
+        await redis.set(f"broadcast:{campaign.id}:status", BroadcastStatus.PENDING)
+        await redis.set(f"broadcast:{campaign.id}:sent", 0)
+        await redis.set(f"broadcast:{campaign.id}:fail", 0)
+        await redis.set(f"broadcast:{campaign.id}:total", 0)
+        logger.info(f"[BROADCAST] Initialized Redis keys for campaign {campaign.id}")
+
+    # 5. Trigger Taskiq Loader (delayed to ensure DB commit)
     import asyncio
     from app.services.scheduler.broadcast_tasks import start_broadcast_task
     
     async def _kick_broadcast(c_id: int):
-        await asyncio.sleep(1)  # Wait for DB transaction to commit
-        await start_broadcast_task.kiq(campaign_id=c_id)
+        try:
+            await asyncio.sleep(1)  # Wait for DB transaction to commit
+            kiq_result = await start_broadcast_task.kiq(campaign_id=c_id)
+            logger.info(f"[BROADCAST] Taskiq loader triggered for campaign {c_id}. Task ID: {kiq_result.task_id}")
+        except Exception as e:
+            logger.error(f"[BROADCAST] Failed to trigger Taskiq loader for campaign {c_id}: {e}")
         
     asyncio.create_task(_kick_broadcast(campaign.id))
     
+    manager.dialog_data["campaign_id"] = campaign.id
     await callback.answer("Рассылка запущена!")
-    await manager.done()
+    await manager.switch_to(BroadcastSG.MONITORING)
+
+
+async def on_pause(callback: CallbackQuery, button: Button, manager: DialogManager):
+    campaign_id = manager.dialog_data.get("campaign_id")
+    redis = manager.middleware_data.get("_cache_pool")
+    if campaign_id and redis:
+        await redis.set(f"broadcast:{campaign_id}:status", BroadcastStatus.PAUSED)
+        await callback.answer("Рассылка приостановлена")
+
+
+async def on_resume(callback: CallbackQuery, button: Button, manager: DialogManager):
+    campaign_id = manager.dialog_data.get("campaign_id")
+    redis = manager.middleware_data.get("_cache_pool")
+    if campaign_id and redis:
+        await redis.set(f"broadcast:{campaign_id}:status", BroadcastStatus.SENDING)
+        await callback.answer("Рассылка возобновлена")
+
+
+async def on_stop(callback: CallbackQuery, button: Button, manager: DialogManager):
+    campaign_id = manager.dialog_data.get("campaign_id")
+    redis = manager.middleware_data.get("_cache_pool")
+    db: DB = manager.middleware_data.get("db")
+    
+    if campaign_id and redis:
+        await redis.set(f"broadcast:{campaign_id}:status", "stopped")
+        if db:
+            await db.broadcast.update_status(campaign_id, BroadcastStatus.CANCELLED)
+        await callback.answer("Рассылка остановлена")
+        await manager.done()
