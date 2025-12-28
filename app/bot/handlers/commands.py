@@ -43,7 +43,9 @@ async def process_start_command(
     if user_row is None:
         pass # User is created in middleware
     await bot.set_my_commands(
-        commands=get_main_menu_commands(i18n=i18n),
+        commands=get_main_menu_commands(
+            i18n=i18n, user_role=user_row.role if user_row else UserRole.USER
+        ),
         scope=BotCommandScopeChat(
             type=BotCommandScopeType.CHAT, chat_id=message.from_user.id
         ),

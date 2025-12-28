@@ -33,6 +33,11 @@ help-command = This is a bot template created by <b>Mikhail Kryzhanovsky</b>. He
                /start - Restart the bot
                /help - View this help
 
+               <b>Broadcasts (admins only):</b>
+
+               /broadcast - Create a message broadcast for bot users
+
+
 simple-task = Simple task
 
 task-soon = The task will be completed soon!
@@ -82,3 +87,4 @@ start-command-description = Restart the bot
 lang-command-description = Configure the interface language
 
 help-command-description = View the help for the bot
+broadcast-command-description = Create a broadcast

@@ -46,7 +46,7 @@ async def update_user_lang(
     )
     dialog_manager.middleware_data["user_row"] = user_row
     await bot.set_my_commands(
-        commands=get_main_menu_commands(i18n=i18n),
+        commands=get_main_menu_commands(i18n=i18n, user_role=user_row.role),
         scope=BotCommandScopeChat(
             type=BotCommandScopeType.CHAT, chat_id=callback.from_user.id
         ),
