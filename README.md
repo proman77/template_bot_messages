@@ -34,6 +34,7 @@ You can learn how to develop telegram bots using the `aiogram` framework in the 
 │   └── 📁 services/     # Business logic and background tasks
 ├── 📁 config/           # Configuration files
 ├── 📁 docs/             # Documentation and development steps
+│   └── 📄 DATABASE_SCHEMA.md # Detailed database schema description
 ├── 📁 locales/          # Localization files (Fluent)
 ├── 📁 logs/             # Application logs
 ├── 📁 nats_broker/      # NATS configuration and migrations

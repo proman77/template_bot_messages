@@ -9,7 +9,7 @@
 - **Registration**: Таблица зарегистрирована в `app/infrastructure/database/db.py`.
 
 ### SQL Схема для миграции:
-Миграция `e79f1139cc83_add_broadcast_tables` успешно применена.
+Миграция `e79f1139cc83_add_broadcast_tables` успешно применена. Подробное описание полей таблиц `broadcast_campaigns` и `broadcast_messages` см. в [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md).
 
 ---
 ## 2. Админка (Aiogram-dialog) — ✅ ВЫПОЛНЕНО
@@ -53,7 +53,7 @@
     1.  Создан механизм `win_fix/sitecustomize.py`, который принудительно устанавливает `SelectorEventLoopPolicy` для всех процессов Python.
     2.  Реализовано monkeypatching `asyncio` для предотвращения сброса настроек в дочерних процессах Taskiq.
     3.  **Запуск:** Для корректной работы воркера на Windows создан файл `run_worker.bat`.
-*   **Архитектура:** Enums (`BroadcastStatus`, `UserRole`) перенесены в `app/infrastructure/database/models/`, чтобы избежать циклических импортов при загрузке задач воркером.
+*   **Архитектура:** Enums (`BroadcastStatus`, `UserRole`) перенесены in `app/infrastructure/database/models/`, чтобы избежать циклических импортов при загрузке задач воркером.
 
 ---
 ## ✅ Критерии Приемки (Definition of Done)
